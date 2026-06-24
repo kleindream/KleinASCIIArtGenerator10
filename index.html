@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Klein ASCII Art Generator</title>
+  <style>
+    :root {
+      --bg: #070b07;
+      --panel: #101810;
+      --panel-2: #0c120c;
+      --text: #dfffe0;
+      --muted: #87b987;
+      --accent: #00ff66;
+      --accent-2: #6cff9b;
+      --border: rgba(0, 255, 102, 0.35);
+      --shadow: rgba(0, 255, 102, 0.18);
+      --button-text: #021006;
+    }
+
+    body.theme-amber {
+      --bg: #100900;
+      --panel: #1b1206;
+      --panel-2: #130d05;
+      --text: #fff1d0;
+      --muted: #d9ad65;
+      --accent: #ffb000;
+      --accent-2: #ffd37a;
+      --border: rgba(255, 176, 0, 0.38);
+      --shadow: rgba(255, 176, 0, 0.18);
+      --button-text: #130800;
+    }
+
+    body.theme-blue {
+      --bg: #050914;
+      --panel: #0c1426;
+      --panel-2: #080f1c;
+      --text: #e1efff;
+      --muted: #9ab9e6;
+      --accent: #39a8ff;
+      --accent-2: #8fd0ff;
+      --border: rgba(57, 168, 255, 0.38);
+      --shadow: rgba(57, 168, 255, 0.18);
+      --button-text: #00101d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Courier New", Courier, monospace;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.05), transparent 28%),
+        linear-gradient(135deg, #020402 0%, var(--bg) 45%, #000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .scanlines::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.025),
+        rgba(255,255,255,0.025) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      opacity: 0.36;
+    }
+
+    .app {
+      width: min(920px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      box-shadow: 0 0 35px var(--shadow), inset 0 0 18px rgba(255,255,255,0.03);
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+      color: var(--accent-2);
+      text-shadow: 0 0 10px var(--shadow);
+      letter-spacing: 0.5px;
+    }
+
+    .led {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 14px var(--accent);
+    }
+
+    .version {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .content { padding: 26px; }
+
+    h1 {
+      margin: 0 0 8px 0;
+      color: var(--accent);
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      line-height: 1.05;
+      text-shadow: 0 0 18px var(--shadow);
+    }
+
+    .subtitle {
+      margin: 0 0 22px 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      background: rgba(0,0,0,0.22);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent-2);
+      font-size: 14px;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #050705;
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+      font-size: 16px;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.45);
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 14px var(--shadow), inset 0 0 12px rgba(0,0,0,0.45);
+    }
+
+    .counter {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    button {
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 11px 15px;
+      background: var(--accent);
+      color: var(--button-text);
+      font-weight: bold;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.08s ease, filter 0.12s ease, box-shadow 0.12s ease;
+      box-shadow: 0 0 12px var(--shadow);
+    }
+
+    button:hover { filter: brightness(1.12); box-shadow: 0 0 18px var(--shadow); }
+    button:active { transform: translateY(1px); }
+
+    button.secondary {
+      background: transparent;
+      color: var(--accent-2);
+    }
+
+    button.small {
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .themes {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .output-wrap { margin-top: 18px; }
+
+    .ascii-output {
+      margin: 0;
+      min-height: 180px;
+      max-height: 420px;
+      overflow: auto;
+      padding: 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #030503;
+      color: var(--accent);
+      font-family: "Courier New", Courier, monospace;
+      white-space: pre;
+      line-height: 1.05;
+      font-size: 13px;
+      letter-spacing: 0;
+      text-shadow: 0 0 8px var(--shadow);
+    }
+
+    .status {
+      min-height: 18px;
+      margin-top: 10px;
+      color: var(--accent-2);
+      font-size: 13px;
+    }
+
+    footer {
+      padding: 8px 16px 12px;
+      text-align: center;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.18);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    footer strong { color: var(--accent-2); }
+
+    @media (max-width: 220px) {
+      body { padding: 12px; align-items: flex-start; }
+      .content { padding: 18px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .themes { justify-content: flex-start; }
+      .input-row { grid-template-columns: 1fr; }
+      button { width: 100%; }
+      .buttons { flex-direction: column; }
+      .ascii-output { font-size: 11px; }
+    }
+  </style>
+</head>
+<body class="scanlines">
+  <main class="app" role="application" aria-label="Klein ASCII Art Generator">
+    <div class="topbar">
+      <div class="brand"><span class="led"></span> KLEIN ASCII ART GENERATOR</div>
+      <div class="themes" aria-label="Temas">
+        <button class="small secondary" type="button" onclick="setTheme('green')">GREEN</button>
+        <button class="small secondary" type="button" onclick="setTheme('amber')">AMBER</button>
+        <button class="small secondary" type="button" onclick="setTheme('blue')">BLUE</button>
+      </div>
+    </div>
+
+    <section class="content">
+      <h1>🔠 Gerador ASCII</h1>
+      <p class="subtitle">Transforme seu texto em arte no estilo dos fóruns antigos, BBS e terminais clássicos.</p>
+
+      <div class="panel">
+        <label for="ascii-input">Digite seu texto:</label>
+        <div class="input-row">
+          <input id="ascii-input" type="text" maxlength="20" placeholder="Ex: KLEIN DREAM" autocomplete="off" />
+          <button type="button" onclick="gerarASCII()">Gerar</button>
+        </div>
+        <div class="counter"><span id="char-count">0</span>/20 caracteres • Enter também gera</div>
+
+        <div class="buttons">
+          <button class="secondary" type="button" onclick="copiarASCII()">Copiar</button>
+          <button class="secondary" type="button" onclick="salvarTXT()">Salvar TXT</button>
+          <button class="secondary" type="button" onclick="limparASCII()">Limpar</button>
+        </div>
+
+        <div class="output-wrap">
+          <pre id="ascii-output" class="ascii-output" aria-live="polite"></pre>
+        </div>
+        <div id="status" class="status"></div>
+      </div>
+    </section>
+
+    <footer>
+      <strong>By Rodrigo Klein Mariano Canto</strong>
+    </footer>
+  </main>
+
+  <script>
+    const letras = {
+      A: ["  A  ", " A A ", "AAAAA", "A   A", "A   A"],
+      B: ["BBBB ", "B   B", "BBBB ", "B   B", "BBBB "],
+      C: [" CCC ", "C    ", "C    ", "C    ", " CCC "],
+      D: ["DDD  ", "D  D ", "D   D", "D  D ", "DDD  "],
+      E: ["EEEE", "E   ", "EEE ", "E   ", "EEEE"],
+      F: ["FFFF", "F   ", "FFF ", "F   ", "F   "],
+      G: [" GGG ", "G    ", "G  GG", "G   G", " GGG "],
+      H: ["H   H", "H   H", "HHHHH", "H   H", "H   H"],
+      I: ["III", " I ", " I ", " I ", "III"],
+      J: [" JJJ", "   J", "   J", "J  J", " JJ "],
+      K: ["K  K", "K K ", "KK  ", "K K ", "K  K"],
+      L: ["L   ", "L   ", "L   ", "L   ", "LLLL"],
+      M: ["M   M", "MM MM", "M M M", "M   M", "M   M"],
+      N: ["N   N", "NN  N", "N N N", "N  NN", "N   N"],
+      O: [" OOO ", "O   O", "O   O", "O   O", " OOO "],
+      P: ["PPPP ", "P   P", "PPPP ", "P    ", "P    "],
+      Q: [" QQQ ", "Q   Q", "Q   Q", "Q  Q ", " QQ Q"],
+      R: ["RRRR ", "R   R", "RRRR ", "R R  ", "R  RR"],
+      S: [" SSS ", "S    ", " SS  ", "   S ", "SSS  "],
+      T: ["TTTTT", "  T  ", "  T  ", "  T  ", "  T  "],
+      U: ["U   U", "U   U", "U   U", "U   U", " UUU "],
+      V: ["V   V", "V   V", "V   V", " V V ", "  V  "],
+      W: ["W   W", "W   W", "W W W", "WW WW", "W   W"],
+      X: ["X   X", " X X ", "  X  ", " X X ", "X   X"],
+      Y: ["Y   Y", " Y Y ", "  Y  ", "  Y  ", "  Y  "],
+      Z: ["ZZZZZ", "   Z ", "  Z  ", " Z   ", "ZZZZZ"],
+      "0": [" 000 ", "0   0", "0   0", "0   0", " 000 "],
+      "1": [" 1 ", "11 ", " 1 ", " 1 ", "111"],
+      "2": ["222 ", "   2", " 22 ", "2   ", "2222"],
+      "3": ["333 ", "   3", " 33 ", "   3", "333 "],
+      "4": ["4  4", "4  4", "4444", "   4", "   4"],
+      "5": ["5555", "5   ", "555 ", "   5", "555 "],
+      "6": [" 666", "6   ", "666 ", "6  6", " 66 "],
+      "7": ["7777", "   7", "  7 ", " 7  ", "7   "],
+      "8": [" 88 ", "8  8", " 88 ", "8  8", " 88 "],
+      "9": [" 99 ", "9  9", " 999", "   9", "999 "],
+      " ": ["   ", "   ", "   ", "   ", "   "],
+      "-": ["     ", "     ", "-----", "     ", "     "],
+      ".": ["   ", "   ", "   ", "   ", " . "],
+      "!": [" ! ", " ! ", " ! ", "   ", " ! "],
+      "?": ["??? ", "   ?", " ?? ", "    ", " ?  "],
+      default: ["????", "?  ?", " ?? ", "    ", " ?? "]
+    };
+
+    function normalizarLetra(letra) {
+      const saida = letra.slice(0, 5);
+      while (saida.length < 5) saida.push(" ".repeat(saida[0]?.length || 4));
+      return saida;
+    }
+
+    function getTextoNormalizado() {
+      const input = document.getElementById("ascii-input");
+      return (input?.value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+    }
+
+    function gerarASCII() {
+      const output = document.getElementById("ascii-output");
+      if (!output) return;
+
+      const texto = getTextoNormalizado();
+      const linhas = ["", "", "", "", ""];
+
+      for (const char of texto) {
+        const letra = normalizarLetra(letras[char] || letras.default);
+        for (let i = 0; i < 5; i++) {
+          linhas[i] += letra[i] + "  ";
+        }
+      }
+
+      output.textContent = texto.trim() ? linhas.join("\n") : "";
+      setStatus(texto.trim() ? "ASCII gerado com sucesso." : "Digite um texto para gerar a arte.");
+    }
+
+    async function copiarASCII() {
+      const output = document.getElementById("ascii-output");
+      if (!output || !output.textContent) {
+        setStatus("Nada para copiar ainda.");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(output.textContent);
+        setStatus("Copiado para a área de transferência.");
+      } catch (err) {
+        const range = document.createRange();
+        range.selectNodeContents(output);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand("copy");
+        sel.removeAllRanges();
+        setStatus("Copiado usando modo de compatibilidade.");
+      }
+    }
+
+    function salvarTXT() {
+      const output = document.getElementById("ascii-output");
+      if (!output || !output.textContent) {
+        setStatus("Nada para salvar ainda.");
+        return;
+      }
+
+      const blob = new Blob([output.textContent + "\n"], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "klein-ascii-art.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus("Arquivo TXT gerado.");
+    }
+
+    function limparASCII() {
+      const input = document.getElementById("ascii-input");
+      const output = document.getElementById("ascii-output");
+      if (input) input.value = "";
+      if (output) output.textContent = "";
+      updateCounter();
+      setStatus("Tela limpa.");
+      input?.focus();
+    }
+
+    function setStatus(texto) {
+      const status = document.getElementById("status");
+      if (status) status.textContent = texto || "";
+    }
+
+    function updateCounter() {
+      const input = document.getElementById("ascii-input");
+      const counter = document.getElementById("char-count");
+      if (input && counter) counter.textContent = String(input.value.length);
+    }
+
+    function setTheme(theme) {
+      document.body.classList.remove("theme-amber", "theme-blue");
+      if (theme === "amber") document.body.classList.add("theme-amber");
+      if (theme === "blue") document.body.classList.add("theme-blue");
+      try { localStorage.setItem("kleinAsciiTheme", theme); } catch (e) {}
+      setStatus("Tema aplicado: " + theme.toUpperCase() + ".");
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const input = document.getElementById("ascii-input");
+      const savedTheme = (() => {
+        try { return localStorage.getItem("kleinAsciiTheme") || "green"; } catch (e) { return "green"; }
+      })();
+      setTheme(savedTheme);
+      setStatus("Pronto para gerar arte ASCII offline.");
+
+      if (input) {
+        input.addEventListener("input", updateCounter);
+        input.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") gerarASCII();
+        });
+        input.focus();
+        updateCounter();
+      }
+    });
+  </script>
+</body>
+</html>
